@@ -7,7 +7,7 @@ const servers = {
     ]
 };
 
-const socket = new WebSocket('ws://localhost:3000');
+const socket = new WebSocket("ws://chat-and-stream-backend.onrender.com");
 const userId = prompt("Your ID:");
 const remoteId = prompt("Connect to user ID:");
 
