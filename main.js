@@ -88,12 +88,18 @@ function setupPeerConnection() {
 }
 
 function sendToPeer(type, payload, to = remoteId) {
-    socket.send(JSON.stringify({
-        type,
-        from: userId,
-        to,
-        payload
-    }));
+    if (socket.readyState === WebSocket.OPEN) {
+        socket.send(JSON.stringify({
+            type,
+            from: userId,
+            to,
+            payload
+        }));
+    } else {
+        console.warn("Socket not open yet. Queuing or retry logic should be here.");
+        // Optional: Retry logic after short delay (if you want)
+        setTimeout(() => sendToPeer(type, payload, to), 200); // retry after 200ms
+    }
 }
 
 init();
