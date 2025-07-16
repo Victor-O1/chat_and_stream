@@ -8,11 +8,18 @@ const servers = {
 };
 
 const socket = new WebSocket("wss://chat-and-stream-backend.onrender.com");
+
 const userId = prompt("Your ID:");
 const remoteId = prompt("Connect to user ID:");
 
 socket.onopen = () => {
+    console.log("✅ WebSocket connected");
     socket.send(JSON.stringify({ type: "join", from: userId }));
+
+    // Moved createOffer() here so it's guaranteed after WebSocket is open
+    if (confirm("Create offer?")) {
+        createOffer();
+    }
 };
 
 socket.onmessage = async ({ data }) => {
@@ -38,11 +45,13 @@ let init = async () => {
         video: true,
         audio: true
     });
-    document.getElementById('user-1').srcObject = localStream;
 
-    if (confirm("Create offer?")) {
-        createOffer();
-    }
+    // Assign local video stream
+    const user1Video = document.getElementById('user-1');
+    user1Video.srcObject = localStream;
+    user1Video.muted = true; // ✅ Mute self to avoid echo
+
+    // Ready to create offer after socket opens (moved to onopen)
 };
 
 let createOffer = async () => {
@@ -68,8 +77,11 @@ function setupPeerConnection() {
     peerConnection = new RTCPeerConnection(servers);
     remoteStream = new MediaStream();
 
-    document.getElementById('user-2').srcObject = remoteStream;
+    const user2Video = document.getElementById('user-2');
+    user2Video.srcObject = remoteStream;
+    user2Video.muted = false;
 
+    // Send both audio and video tracks
     localStream.getTracks().forEach(track => {
         peerConnection.addTrack(track, localStream);
     });
@@ -96,14 +108,13 @@ function sendToPeer(type, payload, to = remoteId) {
             payload
         }));
     } else {
-        console.warn("Socket not open yet. Queuing or retry logic should be here.");
-        // Optional: Retry logic after short delay (if you want)
-        setTimeout(() => sendToPeer(type, payload, to), 200); // retry after 200ms
+        console.warn("⚠️ WebSocket not ready — retrying...");
+        setTimeout(() => sendToPeer(type, payload, to), 200);
     }
 }
 
+// 🔥 Call init only after WebSocket is defined
 init();
-
 
 
 // let localStream;
